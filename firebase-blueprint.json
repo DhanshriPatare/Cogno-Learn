@@ -1,0 +1,104 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and productivity data",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "productivity": { 
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "activityLog": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "description": { "type": "string" },
+              "time": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "required": ["name", "email"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "User tasks and objectives",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "text": { "type": "string" },
+        "done": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "text", "done"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "AI Tutor chat history",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "role", "text"]
+    },
+    "StudyPlan": {
+      "title": "StudyPlan",
+      "description": "AI generated study plans",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "topic": { "type": "string" },
+        "timeframe": { "type": "string" },
+        "plan": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "topic", "timeframe", "plan"]
+    },
+    "MoodLog": {
+      "title": "MoodLog",
+      "description": "User mood analysis logs",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "mood": { "type": "string" },
+        "suggestion": { "type": "string" },
+        "activity": { "type": "string" },
+        "imageKeyword": { "type": "string" },
+        "overlayColor": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "mood"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and stats"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User tasks"
+    },
+    "/chatMessages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "AI chat history"
+    },
+    "/studyPlans/{planId}": {
+      "schema": "StudyPlan",
+      "description": "Study plans"
+    },
+    "/moodLogs/{logId}": {
+      "schema": "MoodLog",
+      "description": "Mood logs"
+    }
+  }
+}

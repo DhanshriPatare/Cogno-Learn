@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required)
+    //   - productivity: array of numbers (optional)
+    //   - activityLog: array of objects (optional)
+    //
+    // Collection: tasks
+    // Document ID: {taskId}
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - text: string (required, size < 500)
+    //   - done: boolean (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: chatMessages
+    // Document ID: {messageId}
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - role: string (required, 'user' or 'model')
+    //   - text: string (required, size < 5000)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: studyPlans
+    // Document ID: {planId}
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - topic: string (required)
+    //   - timeframe: string (required)
+    //   - plan: list (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: moodLogs
+    // Document ID: {logId}
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - mood: string (required)
+    //   - suggestion: string
+    //   - activity: string
+    //   - imageKeyword: string
+    //   - overlayColor: string
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isRequestOwner() {
+      return isAuthenticated() && request.auth.uid == request.resource.data.userId;
+    }
+
+    function isValidUser(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidTask(data) {
+      return data.userId == request.auth.uid &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 500 &&
+             data.done is bool;
+    }
+
+    function isValidChatMessage(data) {
+      return data.userId == request.auth.uid &&
+             data.role in ['user', 'model'] &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 5000;
+    }
+
+    function isValidStudyPlan(data) {
+      return data.userId == request.auth.uid &&
+             data.topic is string && data.topic.size() > 0 &&
+             data.timeframe is string &&
+             data.plan is list;
+    }
+
+    function isValidMoodLog(data) {
+      return data.userId == request.auth.uid &&
+             data.mood is string;
+    }
+
+    // ===============================================================
+    // Match Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isRequestOwner() && isValidTask(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidTask(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /chatMessages/{messageId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isRequestOwner() && isValidChatMessage(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /studyPlans/{planId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isRequestOwner() && isValidStudyPlan(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /moodLogs/{logId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isRequestOwner() && isValidMoodLog(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+  }
+}
